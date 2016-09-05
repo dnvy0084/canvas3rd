@@ -1,0 +1,204 @@
+<html>
+<head>
+	<title>5. rotate</title>
+	<script type="text/javascript" src="js/dat.gui.js"></script>
+</head>
+<body>
+	<canvas id="stage" width="800" height="600" style="border:1px solid #999"></canvas>
+	<img id="img_a" src="img/a.png" />
+	<script type="text/javascript">
+
+		/**
+		 * canvas context 객체 - 캔버스에서 draw를 위한 대부분의 api를 가지고 있습니다. 
+		 * @type {[type]}
+		 */
+		var context = document.getElementById( "stage" ).getContext( "2d" );
+
+		/**
+		 * x축 이동
+		 * x` = x + tx;
+		 * @type {Number}
+		 */
+		var tx = 0;
+
+		/**
+		 * y축 이동
+		 * y` = y + ty;
+		 * @type {Number}
+		 */
+		var ty = 0;
+
+
+		/**
+		 * x축 크기
+		 * x` = x * sx;
+		 * @type {Number}
+		 */
+		var sx = 1.0;
+
+		/**
+		 * y축 크기 
+		 * y` = y * sy;
+		 * @type {Number}
+		 */
+		var sy = 1.0;
+
+		/**
+		 * 좌표축의 회전각 radian;
+		 * @type {Number}
+		 */
+		var radian = 0.0;
+
+		/**
+		 * test를 위해 필요한 ui를 제공합니다. 
+		 * @type {dat}
+		 */
+		var gui = new dat.GUI();
+
+		gui.add( window, "draw" );
+		gui.add( window, "translate" );
+		gui.add( window, "scale" );
+		gui.add( window, "rotate" );
+		gui.add( window, "drawGrid" );
+		gui.add( window, "drawImage" );
+
+		gui.add( window, "tx", -context.canvas.width, +context.canvas.width ).onChange( draw );
+		gui.add( window, "ty", -context.canvas.height, +context.canvas.height ).onChange( draw );
+		gui.add( window, "sx", -2.0, +2.0 ).onChange( draw );
+		gui.add( window, "sy", -2.0, +2.0 ).onChange( draw );
+		gui.add( window, "radian", 0, 360 ).onChange( draw );
+
+		gui.add( window, "clear" );
+
+
+		/**
+		 * 캔버스 초기화 -> 이동 -> 그리드 -> 이미지 순으로 함수를 호출합니다. 
+		 * @return {[type]} [description]
+		 */
+		function draw(){
+
+			clear();
+
+			drawGrid();
+
+			translate();
+			rotate();
+			scale();
+
+			drawImage();
+		}
+
+		/**
+		 * 캔버스 좌표축을 회전 시킵니다. 
+		 * @return {[type]} [description]
+		 */
+		function rotate(){
+
+			context.rotate( radian * Math.PI / 180 );
+		}
+
+		/**
+		 * 캔버스 좌표 축을 sx, sy 만큼 확대/축소합니다. 
+		 * @return {[type]} [description]
+		 */
+		function scale(){
+
+			context.scale( sx, sy );
+		}
+
+
+		/**
+		 * 캔버스 좌표 축을 tx, ty 만큼 이동합니다. 
+		 * @return {[type]} [description]
+		 */
+		function translate(){
+
+			context.translate( tx, ty );
+		}
+
+
+		/**
+		 * 캔버스에 이미지 엘리먼트나 캔버스 엘리먼트를 draw 합니다. 
+		 * @return {[type]} [description]
+		 */
+		function drawImage(){
+
+			var img = document.getElementById( "img_a" );
+
+			context.drawImage( img, 0, 0 );
+		}
+
+
+		/**
+		 * 캔버스에 grid를 그리기 위한 함수입니다.
+		 * 실제 stroke, fill 등 draw 하는 api는 성능이 많이 필요합니다. 
+		 * 그래서 같은 색상이나 두께의 stroke라면 한번의 path로 draw 처리를 하는게 최적화의 한 방법입니다. 
+		 * @return {[type]} [description]
+		 */
+		function drawGrid(){
+
+			// 10px 마다 회색 라인을 그려주기 위한 path 생성. 
+			context.beginPath();
+
+			var canvas = context.canvas, 
+				x, y;
+
+			for( x = 0; x <= canvas.width; x += 10 ){
+
+				if( x % 100 == 0 ) continue;
+				
+				context.moveTo( x, 0 );
+				context.lineTo( x, canvas.height );
+			}
+
+			for( y = 0; y <= canvas.height; y += 10 ){
+
+				if( y % 100 == 0 ) continue;
+				
+				context.moveTo( 0, y );
+				context.lineTo( canvas.width, y );
+			}
+
+			context.strokeStyle = "#ccc";
+			context.stroke();
+
+			// 100px 마다 검은색 라인을 그려주기 위한 path 생성. 
+			context.beginPath();
+
+			for( x = 0; x <= canvas.width; x += 100 ){
+				
+				context.moveTo( x, 0 );
+				context.lineTo( x, canvas.height );
+			}
+
+			for( y = 0; y <= canvas.height; y += 100 ){
+				
+				context.moveTo( 0, y );
+				context.lineTo( canvas.width, y );
+			}
+
+			context.strokeStyle = "#666";
+			context.stroke();
+		}
+
+		/**
+		 * 캔버스에 그려진 데이터를 모두 지우는 함수입니다. 
+		 * @return {[type]} [description]
+		 */
+		function clear(){
+
+			//context.resetTransform();
+			context.setTransform( 1, 0, 0, 1, 0, 0 );
+
+			var canvas = context.canvas;
+
+			context.clearRect( 0, 0, canvas.width, canvas.height );
+		}
+
+
+		draw();
+		
+
+	</script>
+</body>
+</html>
