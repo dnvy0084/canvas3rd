@@ -2,9 +2,14 @@
 <head>
 	<title>11. CSSMatrix</title>
 	<script type="text/javascript" src="js/dat.gui.js"></script>
+	<style type="text/css">
+		body{
+			margin: 0 0 0 0;
+			padding: 0 0 0 0;
+		}
+	</style>
 </head>
 <body>
-	<canvas id="stage" width="800" height="600" style="border:1px solid #999"></canvas>
 	<img id="img_a" src="img/a.png" style="position: absolute" />
 	<script type="text/javascript">
 
@@ -79,11 +84,6 @@
 	</script>
 	<script type="text/javascript">
 
-		/**
-		 * canvas context 객체 - 캔버스에서 draw를 위한 대부분의 api를 가지고 있습니다. 
-		 * @type {[type]}
-		 */
-		var context = document.getElementById( "stage" ).getContext( "2d" );
 
 		var simpson = new DisplayObject( document.getElementById( "img_a" ) );
 
@@ -93,8 +93,8 @@
 		 */
 		var gui = new dat.GUI();
 
-		gui.add( simpson, "x", -context.canvas.width, +context.canvas.width ).onChange( updateCSS );
-		gui.add( simpson, "y", -context.canvas.height, +context.canvas.height ).onChange( updateCSS );
+		gui.add( simpson, "x", -window.innerWidth, +window.innerWidth ).onChange( updateCSS );
+		gui.add( simpson, "y", -window.innerHeight, +window.innerHeight ).onChange( updateCSS );
 		gui.add( simpson, "scaleX", -2.0, +2.0 ).onChange( updateCSS );
 		gui.add( simpson, "scaleY", -2.0, +2.0 ).onChange( updateCSS );
 		gui.add( simpson, "rotation", 0, 360 ).onChange( updateCSS );

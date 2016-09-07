@@ -2,9 +2,16 @@
 <head>
 	<title>5. rotate</title>
 	<script type="text/javascript" src="js/dat.gui.js"></script>
+	<style type="text/css">
+		body{
+			margin: 0 0 0 0;
+			padding: 0 0 0 0;
+		}
+		img{ display: none; }
+	</style>
 </head>
 <body>
-	<canvas id="stage" width="800" height="600" style="border:1px solid #999"></canvas>
+	<canvas id="stage" width="550" height="400" style="border:1px solid #999"></canvas>
 	<img id="img_a" src="img/a.png" />
 	<script type="text/javascript">
 
@@ -84,7 +91,7 @@
 			translate();
 			rotate();
 			scale();
-			
+
 			drawGrid();
 			drawImage();
 		}
@@ -198,6 +205,8 @@
 
 
 		draw();
+
+		document.getElementById( "img_a" ).onload = draw;
 		
 
 	</script>

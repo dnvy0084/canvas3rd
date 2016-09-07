@@ -2,9 +2,16 @@
 <head>
 	<title>8. setTransform</title>
 	<script type="text/javascript" src="js/dat.gui.js"></script>
+	<style type="text/css">
+		body{
+			margin: 0 0 0 0;
+			padding: 0 0 0 0;
+		}
+		img{ display: none; }
+	</style>
 </head>
 <body>
-	<canvas id="stage" width="800" height="600" style="border:1px solid #999"></canvas>
+	<canvas id="stage" width="550" height="400" style="border:1px solid #999"></canvas>
 	<img id="img_a" src="img/a.png" />
 	<script type="text/javascript">
 
@@ -82,13 +89,6 @@
 		var gui = new dat.GUI();
 
 		gui.add( window, "draw" );
-		gui.add( window, "setTransform" );
-		gui.add( window, "transform" );
-		gui.add( window, "translate" );
-		gui.add( window, "scale" );
-		gui.add( window, "rotate" );
-		gui.add( window, "drawGrid" );
-		gui.add( window, "drawImage" );
 
 		gui.add( window, "tx", -context.canvas.width, +context.canvas.width ).onChange( draw );
 		gui.add( window, "ty", -context.canvas.height, +context.canvas.height ).onChange( draw );
@@ -271,6 +271,8 @@
 
 
 		draw();
+
+		document.getElementById( "img_a" ).onload = draw;
 		
 
 	</script>

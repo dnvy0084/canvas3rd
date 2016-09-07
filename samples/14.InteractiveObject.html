@@ -1,6 +1,6 @@
 <html>
 <head>
-	<title>13. Multiple Simpson in Container</title>
+	<title>14. InteractiveObject</title>
 	<script type="text/javascript" src="js/dat.gui.js"></script>
 	<style type="text/css">
 		body{
@@ -33,7 +33,11 @@
 
 			this.offsetX = 
 			this.offsetY = 0;
+
+			this.mouseEnabled = true;
 		}
+
+		DisplayObject.$p = { x: 0, y: 0 };
 
 		/**
 		 * prototype chain을 이용한 class 선언. 
@@ -42,6 +46,43 @@
 		DisplayObject.prototype = {
 
 			constructor: DisplayObject,
+
+			/**
+			 * global 좌표를 현재 객체의 local 좌표로 변환합니다. 
+			 * M x P = P` -> 
+			 * M^-1 x M x P = M^-1 x P` ->
+			 * P = M^-1 x P`
+			 * @param  {[type]} globalX [description]
+			 * @param  {[type]} globalY [description]
+			 * @param  {[type]} out     [description]
+			 * @return {[type]}         [description]
+			 */
+			globalToLocal: function( globalX, globalY, out ){
+
+				out = out || { x: Infinity, y: Infinity };
+
+				// 행렬식을 구하고 
+				var det = this.a * this.d - this.b * this.c;
+
+				if( det == 0 ) return out;
+
+				det = 1 / det;
+
+				// 역행렬을 구해서. 
+				var a = det * this.d,
+					b = -det * this.b,
+					c = -det * this.c,
+					d = det * this.a,
+					dx = det * ( this.c * this.dy - this.d * this.dx ),
+					dy = det * ( -this.a * this.dy + this.b * this.dx );
+
+				// global 좌표에 곱해주면 
+				out.x = a * globalX + c * globalY + dx;
+				out.y = b * globalX + d * globalY + dy;
+
+				// local 좌표를 구할 수 있습니다. 
+				return out;
+			},
 
 			/**
 			 * 현재 객체의 x, y, scale, rotation 속성을 기준으로 a,b,c,d,dx,dy 를 업데이트 합니다. 
@@ -55,7 +96,7 @@
 					cos = Math.cos( t ),
 					sin = Math.sin( t );
 
-				var pa = 1, pb = 0, pc = 0, pd = 1, px = 0, py = 0;
+				var pa, pb, pc, pd, px, py;
 
 				var a = cos * this.scaleX;
 				var b = sin * this.scaleX;
@@ -92,6 +133,26 @@
 			},
 
 			/**
+			 * global 좌표를 local 좌표로 변경하여 마우스 포인터 충돌 여부 체크 후 반환합니다. 
+			 * @param  {[type]} globalX [description]
+			 * @param  {[type]} globalY [description]
+			 * @return {[type]}         [description]
+			 */
+			hitTest: function( globalX, globalY ){
+
+				if( !this.mouseEnabled ) return;
+				
+				var p = DisplayObject.$p;
+
+				this.globalToLocal( globalX, globalY, p );
+
+				if( p.x == Infinity ) return false;
+				if( p.x < 0 || p.y < 0 || p.x > this.source.width || p.y > this.source.height ) return false;
+
+				return true;
+			},
+
+			/**
 			 * css matrix 설정에 용이하게 배열로 반환합니다. 
 			 * @return {[type]} [description]
 			 */
@@ -123,6 +184,7 @@
 			DisplayObject.call( this, null );
 
 			this.children = [];
+			this.mouseChildren = true;
 		}
 
 		/**
@@ -163,6 +225,27 @@
 		}
 
 		/**
+		 * 자식 객체들의 hitTest를 호출하여 첫번째 충돌 객체를 반환합니다. 
+		 * @param  {[type]} globalX [description]
+		 * @param  {[type]} globalY [description]
+		 * @return {[type]}         [description]
+		 */
+		p.hitTest = function( globalX, globalY ){
+
+			if( !this.mouseChildren ) return false;
+
+			var children = this.children;
+
+			for( var i = children.length; i--; ){
+				
+				if( children[i].hitTest( globalX, globalY ) )
+					return children[i];
+			}
+
+			return null;
+		}
+
+		/**
 		 * 객체가 가지고 있는 자식 객체들을 rendering 합니다. 
 		 * @param  {[type]} context [description]
 		 * @return {[type]}         [description]
@@ -188,7 +271,6 @@
 		var context = document.getElementById( "stage" ).getContext( "2d" );
 		var container = new Container();
 
-
 		function init(){
 
 			var len, t;
@@ -198,7 +280,7 @@
 				var simpson = new DisplayObject( document.getElementById( "img_a" ) );
 
 				t = Math.PI * 2 * Math.random();
-				len = 300 * Math.random();
+				len = 350 * Math.random();
 
 				simpson.x = len * Math.cos(t);
 				simpson.y = len * Math.sin(t);
@@ -216,39 +298,51 @@
 
 			container.x = context.canvas.width / 2;
 			container.y = context.canvas.height / 2;
-
-			// container.offsetX = container.x;
-			// container.offsetY = container.y;
 		}
 
-		var running = false;
+		var focused = null, fx, fy,
+			stageX, stageY;
 
-		document.addEventListener( "mousedown", function(e){ 
+		var r = context.canvas.getBoundingClientRect();
 
-			running = true;
-			render();
+		document.addEventListener( "mousemove", function(e){
+
+			stageX = e.clientX - r.left,
+			stageY = e.clientY - r.top;
 		});
 
-		document.addEventListener( "mouseup", function(e){
-
-			running = false;
-		});
-
-
+		/**
+		 * 매 프레임마다 container 객체의 hitTestObject를 가져와 
+		 * 마우스 오버 처리 후 render호출. 
+		 * @return {[type]} [description]
+		 */
 		function render(){
 
 			clear();
 			drawGrid();
 
-			for( var i = 0; i < container.children.length; i++ ){
+			var hit = container.hitTest( stageX, stageY );
 
-				container.children[i].rotation++;
+			if( hit ){
+
+				if( focused ){
+					focused.scaleX = fx;
+					focused.scaleY = fy;
+				}
+
+				focused = hit;
+
+				fx = hit.scaleX;
+				fy = hit.scaleY;
+
+				hit.scaleX = fx + 0.1;
+				hit.scaleY = fy + 0.1;
+
+				focused.rotation += 0.5;
 			}
 
-			container.rotation += 0.5;
 			container.render( context );
-
-			if( running ) requestAnimationFrame( render );
+			requestAnimationFrame( render );
 		}
 
 

@@ -2,9 +2,15 @@
 <head>
 	<title>1. line draw</title>
 	<script type="text/javascript" src="js/dat.gui.js"></script>
+	<style type="text/css">
+		body{
+			margin: 0 0 0 0;
+			padding: 0 0 0 0;
+		}
+	</style>
 </head>
 <body>
-	<canvas id="stage" width="800" height="600" style="border:1px solid #999"></canvas>
+	<canvas id="stage" width="550" height="400" style="border:1px solid #999"></canvas>
 	<script type="text/javascript">
 
 		/**
@@ -85,6 +91,7 @@
 			context.clearRect( 0, 0, canvas.width, canvas.height );
 		}
 		
+		drawGrid();
 
 	</script>
 </body>
