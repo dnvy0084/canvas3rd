@@ -1,0 +1,318 @@
+<html>
+<head>
+	<title>13. Multiple Simpson in Container</title>
+	<script type="text/javascript" src="js/dat.gui.js"></script>
+</head>
+<body>
+	<canvas id="stage" width="800" height="600" style="border:1px solid #999"></canvas>
+	<img id="img_a" src="img/a.png" style="position: absolute" />
+	<script type="text/javascript">
+
+		/**
+		 * DisplayObject Class 생성자. 
+		 * @param {[type]} img [description]
+		 */
+		function DisplayObject( img ){
+
+			this.source = img;
+
+			this.x = 
+			this.y = 0;
+
+			this.scaleX = 
+			this.scaleY = 1.0;
+
+			this.rotation = 0;
+
+			this.offsetX = 
+			this.offsetY = 0;
+		}
+
+		/**
+		 * prototype chain을 이용한 class 선언. 
+		 * @type {Object}
+		 */
+		DisplayObject.prototype = {
+
+			constructor: DisplayObject,
+
+			/**
+			 * 현재 객체의 x, y, scale, rotation 속성을 기준으로 a,b,c,d,dx,dy 를 업데이트 합니다. 
+			 * 객체의 parent가 null이 아닐 경우 부모 객체의 트랜스폼 행렬 x 자식 객체의 트랜스폼 행렬 곱을 하여 
+			 * 트랜스폼을 적용합니다. 
+			 * @return {[type]} [description]
+			 */
+			updateTransform: function(){
+
+				var t = this.rotation * Math.PI / 180,
+					cos = Math.cos( t ),
+					sin = Math.sin( t );
+
+				var pa = 1, pb = 0, pc = 0, pd = 1, px = 0, py = 0;
+
+				var a = cos * this.scaleX;
+				var b = sin * this.scaleX;
+				var c = -sin * this.scaleY;
+				var d = cos * this.scaleY;
+				var dx = -( a * this.offsetX + c * this.offsetY ) + this.x;
+				var dy = -( b * this.offsetX + d * this.offsetY ) + this.y;
+
+				if( this.parent ){
+
+					pa = this.parent.a;
+					pb = this.parent.b;
+					pc = this.parent.c;
+					pd = this.parent.d;
+					px = this.parent.dx;
+					py = this.parent.dy;
+
+					this.a = pa * a + pc * b;
+					this.b = pb * a + pd * b;
+					this.c = pa * c + pc * d;
+					this.d = pb * c + pd * d;
+					this.dx = pa * dx + pc * dy + px;
+					this.dy = pb * dx + pd * dy + py;
+				}
+				else{
+
+					this.a = a;
+					this.b = b;
+					this.c = c;
+					this.d = d;
+					this.dx = dx;
+					this.dy = dy;
+				}
+			},
+
+			/**
+			 * css matrix 설정에 용이하게 배열로 반환합니다. 
+			 * @return {[type]} [description]
+			 */
+			getTransform: function(){
+
+				return [ this.a, this.b, this.c, this.d, this.dx, this.dy ];
+			},
+
+			/**
+			 * context 객체를 이용해 트랜스폼을 설정하고 이미지(소스)를 그립니다. 
+			 * @param  {[type]} context [description]
+			 * @return {[type]}         [description]
+			 */
+			render: function( context ){
+
+				this.updateTransform();
+
+				context.setTransform( this.a, this.b, this.c, this.d, this.dx, this.dy );
+				context.drawImage( this.source, 0, 0 );
+			}
+		}
+
+
+		/**
+		 * 컨테이너 클래스 생성자. 
+		 */
+		function Container(){
+
+			DisplayObject.call( this, null );
+
+			this.children = [];
+		}
+
+		/**
+		 * DisplayObject 상속
+		 * @type {[type]}
+		 */
+		var p = Container.prototype = Object.create( DisplayObject.prototype );
+
+		p.constructor = Container;
+
+		/**
+		 * 자식 객체를 append 합니다. 
+		 * @param  {[type]} child [description]
+		 * @return {[type]}       [description]
+		 */
+		p.append = function( child ){
+
+			this.remove( child );
+
+			child.parent = this;
+			this.children.push( child );
+		}
+
+		/**
+		 * 자식 객체를 remove 합니다. 
+		 * @param  {[type]} child [description]
+		 * @return {[type]}       [description]
+		 */
+		p.remove = function( child ){
+
+			var index = this.children.indexOf( child );
+
+			if( index == -1 ) return;
+
+			child.parent = null;
+
+			return this.children.splice( index, 1 )[0];
+		}
+
+		/**
+		 * 객체가 가지고 있는 자식 객체들을 rendering 합니다. 
+		 * @param  {[type]} context [description]
+		 * @return {[type]}         [description]
+		 */
+		p.render = function( context ){
+
+			this.updateTransform();
+
+			for( var i = 0; i < this.children.length; i++ ){
+				
+				this.children[i].render( context );
+			}
+		}
+
+
+	</script>
+	<script type="text/javascript">
+
+		/**
+		 * canvas context 객체 - 캔버스에서 draw를 위한 대부분의 api를 가지고 있습니다. 
+		 * @type {[type]}
+		 */
+		var context = document.getElementById( "stage" ).getContext( "2d" );
+		var container = new Container();
+
+
+		function init(){
+
+			var len, t;
+
+			for( var i = 0; i < 1000; i++ ){
+				
+				var simpson = new DisplayObject( document.getElementById( "img_a" ) );
+
+				t = Math.PI * 2 * Math.random();
+				len = 300 * Math.random();
+
+				simpson.x = len * Math.cos(t);
+				simpson.y = len * Math.sin(t);
+
+				simpson.scaleX = 
+				simpson.scaleY = 0.5 * Math.random();
+
+				simpson.offsetX = 
+				simpson.offsetY = 150;
+
+				simpson.rotation = 360 * Math.random();
+
+				container.append( simpson );
+			};
+
+			container.x = context.canvas.width / 2;
+			container.y = context.canvas.height / 2;
+
+			// container.offsetX = container.x;
+			// container.offsetY = container.y;
+		}
+
+		var running = false;
+
+		document.addEventListener( "mousedown", function(e){ 
+
+			running = true;
+			render();
+		});
+
+		document.addEventListener( "mouseup", function(e){
+
+			running = false;
+		});
+
+
+		function render(){
+
+			clear();
+			drawGrid();
+
+			for( var i = 0; i < container.children.length; i++ ){
+
+				container.children[i].rotation++;
+			}
+
+			container.rotation += 0.5;
+			container.render( context );
+
+			if( running ) requestAnimationFrame( render );
+		}
+
+
+		/**
+		 * 캔버스에 grid를 그리기 위한 함수입니다.
+		 * 실제 stroke, fill 등 draw 하는 api는 성능이 많이 필요합니다. 
+		 * 그래서 같은 색상이나 두께의 stroke라면 한번의 path로 draw 처리를 하는게 최적화의 한 방법입니다. 
+		 * @return {[type]} [description]
+		 */
+		function drawGrid(){
+
+			// 10px 마다 회색 라인을 그려주기 위한 path 생성. 
+			context.beginPath();
+
+			var canvas = context.canvas, 
+				x, y;
+
+			for( x = 0; x <= canvas.width; x += 10 ){
+
+				if( x % 100 == 0 ) continue;
+				
+				context.moveTo( x, 0 );
+				context.lineTo( x, canvas.height );
+			}
+
+			for( y = 0; y <= canvas.height; y += 10 ){
+
+				if( y % 100 == 0 ) continue;
+				
+				context.moveTo( 0, y );
+				context.lineTo( canvas.width, y );
+			}
+
+			context.strokeStyle = "#ccc";
+			context.stroke();
+
+			// 100px 마다 검은색 라인을 그려주기 위한 path 생성. 
+			context.beginPath();
+
+			for( x = 0; x <= canvas.width; x += 100 ){
+				
+				context.moveTo( x, 0 );
+				context.lineTo( x, canvas.height );
+			}
+
+			for( y = 0; y <= canvas.height; y += 100 ){
+				
+				context.moveTo( 0, y );
+				context.lineTo( canvas.width, y );
+			}
+
+			context.strokeStyle = "#666";
+			context.stroke();
+		}
+
+		/**
+		 * 캔버스에 그려진 데이터를 모두 지우는 함수입니다. 
+		 * @return {[type]} [description]
+		 */
+		function clear(){
+
+			context.setTransform( 1, 0, 0, 1, 0, 0 );
+
+			var canvas = context.canvas;
+
+			context.clearRect( 0, 0, canvas.width, canvas.height );
+		}
+
+		init();
+		render();
+
+	</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 <html>
 <head>
-	<title>5. rotate</title>
+	<title>7. skew & offset</title>
 	<script type="text/javascript" src="js/dat.gui.js"></script>
 </head>
 <body>
@@ -52,12 +52,37 @@
 		var radian = 0.0;
 
 		/**
+		 * x축 기울임 
+		 * @type {Number}
+		 */
+		var skewX = 0;
+
+		/**
+		 * y축 기울임. 
+		 * @type {Number}
+		 */
+		var skewY = 0;
+
+		/**
+		 * display 객체의 x 축 중심점. 0은 좌측. 
+		 * @type {Number}
+		 */
+		var ox = 0;
+
+		/**
+		 * display 객체의 y 축 중심점. 0은 상단. 
+		 * @type {Number}
+		 */
+		var oy = 0;
+
+		/**
 		 * test를 위해 필요한 ui를 제공합니다. 
 		 * @type {dat}
 		 */
 		var gui = new dat.GUI();
 
 		gui.add( window, "draw" );
+		gui.add( window, "transform" );
 		gui.add( window, "translate" );
 		gui.add( window, "scale" );
 		gui.add( window, "rotate" );
@@ -69,6 +94,10 @@
 		gui.add( window, "sx", -2.0, +2.0 ).onChange( draw );
 		gui.add( window, "sy", -2.0, +2.0 ).onChange( draw );
 		gui.add( window, "radian", 0, 360 ).onChange( draw );
+		gui.add( window, "ox", 0, 300 ).onChange( draw );
+		gui.add( window, "oy", 0, 300 ).onChange( draw );
+		gui.add( window, "skewX", -2, 2 ).onChange( draw );
+		gui.add( window, "skewY", -2, 2 ).onChange( draw );
 
 		gui.add( window, "clear" );
 
@@ -80,13 +109,32 @@
 		function draw(){
 
 			clear();
-
-			translate();
-			rotate();
-			scale();
 			
+			transform();
+
 			drawGrid();
 			drawImage();
+		}
+
+		/**
+		 * context.transform을 호출 합니다. 
+		 * 각 매개변수는 sx, sy, rotation, tx, ty를 기준으로 계산합니다. 
+		 * transform은 "증분"입니다
+		 * @return {[type]} [description]
+		 */
+		function transform(){
+
+			var t = radian * Math.PI / 180,
+				cos = Math.cos( t ),
+				sin = Math.sin( t ),
+				_skewX = Math.tan( skewX ),
+				_skewY = Math.tan( skewY );
+
+			context.transform( 1, 0, 0, 1, tx, ty );
+			context.transform( cos, -sin, sin, cos, 0, 0 );
+			context.transform( sx, 0, 0, sy, 0, 0 );
+			context.transform( 1, _skewX, _skewY, 1, 0, 0 );
+			context.transform( 1, 0, 0, 1, -ox, -oy );
 		}
 
 		/**
@@ -188,7 +236,6 @@
 		 */
 		function clear(){
 
-			//context.resetTransform();
 			context.setTransform( 1, 0, 0, 1, 0, 0 );
 
 			var canvas = context.canvas;

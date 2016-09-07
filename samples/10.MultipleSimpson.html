@@ -1,0 +1,203 @@
+<html>
+<head>
+	<title>10. MultipleSimpson</title>
+	<script type="text/javascript" src="js/dat.gui.js"></script>
+</head>
+<body>
+	<canvas id="stage" width="800" height="600" style="border:1px solid #999"></canvas>
+	<img id="img_a" src="img/a.png" />
+	<script type="text/javascript">
+
+		/**
+		 * DisplayObject Class 생성자. 
+		 * @param {[type]} img [description]
+		 */
+		function DisplayObject( img ){
+
+			this.source = img;
+
+			this.x = 
+			this.y = 0;
+
+			this.scaleX = 
+			this.scaleY = 1.0;
+
+			this.rotation = 0;
+
+			this.offsetX = 
+			this.offsetY = 0;
+		}
+
+		/**
+		 * prototype chain을 이용한 class 선언. 
+		 * @type {Object}
+		 */
+		DisplayObject.prototype = {
+
+			constructor: DisplayObject,
+
+			/**
+			 * 현재 객체의 x, y, scale, rotation 속성을 기준으로 a,b,c,d,dx,dy 를 업데이트 합니다. 
+			 * @return {[type]} [description]
+			 */
+			updateTransform: function(){
+
+				var t = this.rotation * Math.PI / 180,
+					cos = Math.cos( t ),
+					sin = Math.sin( t );
+
+				this.a = cos * this.scaleX;
+				this.b = sin * this.scaleX;
+				this.c = -sin * this.scaleY;
+				this.d = cos * this.scaleY;
+				this.dx = -( this.a * this.offsetX + this.c * this.offsetY ) + this.x;
+				this.dy = -( this.b * this.offsetX + this.d * this.offsetY ) + this.y;
+			},
+
+			/**
+			 * context 객체를 이용해 트랜스폼을 설정하고 이미지(소스)를 그립니다. 
+			 * @param  {[type]} context [description]
+			 * @return {[type]}         [description]
+			 */
+			render: function( context ){
+
+				this.updateTransform();
+
+				context.setTransform(
+					this.a, this.b, this.c, this.d, this.dx, this.dy
+				);
+
+				context.drawImage( this.source, 0, 0 );
+			}
+		}
+
+	</script>
+	<script type="text/javascript">
+
+		/**
+		 * canvas context 객체 - 캔버스에서 draw를 위한 대부분의 api를 가지고 있습니다. 
+		 * @type {[type]}
+		 */
+		var context = document.getElementById( "stage" ).getContext( "2d" );
+		var children = [];
+		
+		/**
+		 * displayObject 객체 생성 및 랜덤 위치 크기 회전을 적용. 
+		 * @return {[type]} [description]
+		 */
+		function init(){
+
+			var img = document.getElementById( "img_a" );
+
+			for( var i = 0; i < 1000; i++ ){
+				
+				var simpson = new DisplayObject( img );
+
+				children.push( simpson );
+
+				simpson.x = context.canvas.width * Math.random();
+				simpson.y = context.canvas.height * Math.random();
+
+				simpson.scaleX = 
+				simpson.scaleY = 0.5 * Math.random() + 0.1;
+
+				simpson.offsetX = 
+				simpson.offsetY = 150;
+
+				simpson.dt = 2 * Math.random();
+
+				simpson.rotation = 360 * Math.random();
+			}
+
+			render();
+		}
+
+		/**
+		 * children 배열의 모든 simpson 객체의 rotation 증가 후 render 호출 합니다. 
+		 * @return {[type]} [description]
+		 */
+		function render(){
+
+			clear();
+			// drawGrid();
+
+			for( var i = 0; i < children.length; i++ ){
+
+				children[i].rotation += children[i].dt;
+				children[i].render( context );
+			}
+
+			requestAnimationFrame( render );
+		}
+
+
+		/**
+		 * 캔버스에 grid를 그리기 위한 함수입니다.
+		 * 실제 stroke, fill 등 draw 하는 api는 성능이 많이 필요합니다. 
+		 * 그래서 같은 색상이나 두께의 stroke라면 한번의 path로 draw 처리를 하는게 최적화의 한 방법입니다. 
+		 * @return {[type]} [description]
+		 */
+		function drawGrid(){
+
+			// 10px 마다 회색 라인을 그려주기 위한 path 생성. 
+			context.beginPath();
+
+			var canvas = context.canvas, 
+				x, y;
+
+			for( x = 0; x <= canvas.width; x += 10 ){
+
+				if( x % 100 == 0 ) continue;
+				
+				context.moveTo( x, 0 );
+				context.lineTo( x, canvas.height );
+			}
+
+			for( y = 0; y <= canvas.height; y += 10 ){
+
+				if( y % 100 == 0 ) continue;
+				
+				context.moveTo( 0, y );
+				context.lineTo( canvas.width, y );
+			}
+
+			context.strokeStyle = "#ccc";
+			context.stroke();
+
+			// 100px 마다 검은색 라인을 그려주기 위한 path 생성. 
+			context.beginPath();
+
+			for( x = 0; x <= canvas.width; x += 100 ){
+				
+				context.moveTo( x, 0 );
+				context.lineTo( x, canvas.height );
+			}
+
+			for( y = 0; y <= canvas.height; y += 100 ){
+				
+				context.moveTo( 0, y );
+				context.lineTo( canvas.width, y );
+			}
+
+			context.strokeStyle = "#666";
+			context.stroke();
+		}
+
+		/**
+		 * 캔버스에 그려진 데이터를 모두 지우는 함수입니다. 
+		 * @return {[type]} [description]
+		 */
+		function clear(){
+
+			context.setTransform( 1, 0, 0, 1, 0, 0 );
+
+			var canvas = context.canvas;
+
+			context.clearRect( 0, 0, canvas.width, canvas.height );
+		}
+
+		init();
+
+	</script>
+</body>
+</html>
