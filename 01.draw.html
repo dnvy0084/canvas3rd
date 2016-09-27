@@ -1,0 +1,123 @@
+<html>
+<head>
+	<title></title>
+</head>
+<body>
+	<canvas id="stage" width="500" height="400" style="border: 1px solid #ccc"></canvas>
+	<img id="img" src="img/a.png" style="display: none"/>
+</body>
+<script type="text/javascript" src="js/dat.gui.js"></script>
+<script type="text/javascript">
+	
+	var canvas = document.getElementById( "stage" ),
+		context = canvas.getContext( "2d" );
+
+	var source = document.getElementById( "img" );
+	var tx = 0, ty = 0;
+	var sx = 1.0, sy = 1.0;
+	var angle = 0.0;
+
+	var gui = new dat.GUI();
+
+	gui.add( window, "draw" );
+	gui.add( window, "tx", 0, canvas.width ).onChange( draw );
+	gui.add( window, "ty", 0, canvas.height ).onChange( draw );
+	gui.add( window, "sx", -2, 2 ).onChange( draw );
+	gui.add( window, "sy", -2, 2 ).onChange( draw );
+	gui.add( window, "angle", 0, 360 ).onChange( draw );
+	gui.add( window, "drawGrid" );
+	gui.add( window, "drawImage" );
+	gui.add( window, "clear" );
+
+	function draw(){
+
+		clear();
+
+		drawGrid();
+
+		transform();
+
+		drawImage();
+	}
+
+	function transform(){
+
+		var t = angle * Math.PI / 180,
+			cos = Math.cos(t),
+			sin = Math.sin(t);
+
+		context.transform( 1, 0, 0, 1, tx, ty ); // t
+		
+
+		context.transform( sx, 0, 0, sy, 0, 0 ); // s
+
+		context.transform( cos, sin, -sin, cos, 0, 0 ); // r
+	}
+
+	function rotate(){
+		context.rotate( angle * Math.PI / 180 );
+	}
+
+	function translate(){
+		context.translate( tx, ty );
+	}
+
+	function scale(){
+		context.scale( sx, sy );
+	}
+
+	function clear(){
+
+		context.setTransform( 1,0,0,1,0,0 );
+		context.clearRect( 0, 0, canvas.width, canvas.height );
+	}
+
+	function drawImage(){
+		context.drawImage( source, 0, 0 );
+	}
+
+	function drawGrid(){
+
+		context.beginPath();
+
+		for( var x = 0; x < canvas.width; x+= 10 ){
+			context.moveTo( x, 0 );
+			context.lineTo( x, canvas.height );
+		}
+
+		context.strokeStyle = "#ddd";
+		context.stroke();
+
+		context.beginPath();
+
+		for( var y = 0; y < canvas.height; y+=10 ){
+			context.moveTo( 0, y );
+			context.lineTo( canvas.width, y );
+		}
+
+		context.stroke();
+
+		context.beginPath();
+
+		for( var x = 0; x < canvas.width; x+= 100 ){
+			context.moveTo( x, 0 );
+			context.lineTo( x, canvas.height );
+		}
+
+		context.strokeStyle = "#aaa";
+		context.stroke();
+
+		context.beginPath();
+
+		for( var y = 0; y < canvas.height; y+=100 ){
+			context.moveTo( 0, y );
+			context.lineTo( canvas.width, y );
+		}
+
+		context.stroke();
+	}
+
+</script>
+</html>
+
+<!--https://github.com/dnvy0084/canvas3rd-->
