@@ -8,36 +8,151 @@
 </body>
 <script type="text/javascript" src="js/dat.gui.js"></script>
 <script type="text/javascript">
+
+	function DisplayObject( img ){
+
+		this.source = img;
+
+		this.x = this.y = 0;
+		this.scaleX = this.scaleY = 1.0;
+		this.rotation = 0;
+		this.pivotX = this.pivotY = 0;
+	}
+
+	DisplayObject.prototype = {
+
+		constructor: DisplayObject,
+
+		updateTransform: function(){
+
+			var a = 1, b = 0, c = 0, d = 1, dx = 0, dy = 0;
+
+			var t = this.rotation * Math.PI / 180, 
+				cos = Math.cos(t), 
+				sin = Math.sin(t),
+				sx = this.scaleX,
+				sy = this.scaleY,
+				ox = this.pivotX,
+				oy = this.pivotY;
+
+			a = cos * sx, c = -sin * sy, dx = -a * ox - c * oy + this.x, 
+			b = sin * sx, d =  cos * sy, dy = -b * ox - d * oy + this.y;
+
+			if( this.parent ){
+
+				// parentMatrix x localMatrix
+				var pa = this.parent.a,
+					pb = this.parent.b,
+					pc = this.parent.c,
+					pd = this.parent.d,
+					px = this.parent.tx,
+					py = this.parent.ty;
+
+				// this.a = ..
+			}
+			else{
+
+				this.a = a;
+				this.b = b;
+				this.c = c;
+				this.d = d;
+				this.tx = dx;
+				this.ty = dy;
+			}
+		},
+
+		render: function( context ){
+
+			this.updateTransform();
+
+			context.setTransform( this.a, this.b, this.c, this.d, this.tx, this.ty );
+			context.drawImage( this.source, 0, 0 );
+		}
+	}
+
+
+	function Container(){
+
+		DisplayObject.call( this );
+
+		this.children = [];
+	}
+
+	var p = Container.prototype = Object.create( DisplayObject.prototype );
+
+	p.add = function( child ){
+
+		if( child.parent ) 
+			child.parent.removeChild( child );
+
+		this.children.push( child );
+		child.parent = this;
+	}
+
+	p.remove = function( child ){
+
+		var index = this.children.indexOf( child );
+
+		if( index == -1 ) return;
+
+		return this.children.splice( index, 1 )[0];
+	}
+
+	p.render = function( context ){
+
+		for( var i = 0; i < this.children.length; i++ ){
+
+			this.children[i].render( context );
+		}
+	}
+
+
+
 	
 	var canvas = document.getElementById( "stage" ),
 		context = canvas.getContext( "2d" );
 
 	var source = document.getElementById( "img" );
-	var tx = 0, ty = 0;
-	var sx = 1.0, sy = 1.0;
-	var angle = 0.0;
+
+	var simpson = new DisplayObject( source );
 
 	var gui = new dat.GUI();
 
-	gui.add( window, "draw" );
-	gui.add( window, "tx", 0, canvas.width ).onChange( draw );
-	gui.add( window, "ty", 0, canvas.height ).onChange( draw );
-	gui.add( window, "sx", -2, 2 ).onChange( draw );
-	gui.add( window, "sy", -2, 2 ).onChange( draw );
-	gui.add( window, "angle", 0, 360 ).onChange( draw );
-	gui.add( window, "drawGrid" );
-	gui.add( window, "drawImage" );
-	gui.add( window, "clear" );
+	gui.add( simpson, "x", 0, canvas.width ).onChange( draw );
+	gui.add( simpson, "y", 0, canvas.height ).onChange( draw );
+	gui.add( simpson, "pivotX", 0, source.width ).onChange( draw );
+	gui.add( simpson, "pivotY", 0, source.height ).onChange( draw );
+	gui.add( simpson, "scaleX", -2, 2 ).onChange( draw );
+	gui.add( simpson, "scaleY", -2, 2 ).onChange( draw );
+	gui.add( simpson, "rotation", 0, 360 ).onChange( draw );
 
 	function draw(){
 
 		clear();
 
 		drawGrid();
+		
+		simpson.render( context );
+	}
 
-		transform();
 
-		drawImage();
+
+
+
+
+
+
+
+	function setTransform(){
+
+		var a = 1, b = 0, c = 0, d = 1, dx = 0, dy = 0;
+
+		var t = angle * Math.PI / 180, cos = Math.cos(t), sin = Math.sin(t);
+
+		a = cos * sx, c = -sin * sy, dx = -a * ox - c * oy + tx, 
+		b = sin * sx, d =  cos * sy, dy = -b * ox - d * oy + ty;
+
+		context.setTransform( a, b, c, d, dx, dy );
 	}
 
 	function transform(){
@@ -47,11 +162,9 @@
 			sin = Math.sin(t);
 
 		context.transform( 1, 0, 0, 1, tx, ty ); // t
-		
-
-		context.transform( sx, 0, 0, sy, 0, 0 ); // s
-
 		context.transform( cos, sin, -sin, cos, 0, 0 ); // r
+		context.transform( sx, 0, 0, sy, 0, 0 ); // s
+		context.transform( 1, 0, 0, 1, -ox, -oy );
 	}
 
 	function rotate(){
